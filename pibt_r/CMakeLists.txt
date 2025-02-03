@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.16)
+file(GLOB SRCS "./src/*.cpp")
+project(lib-mapf-r)
+add_library(lib-mapf-r STATIC ${SRCS})
+add_definitions(-D_MAPDIR_="${CMAKE_CURRENT_LIST_DIR}/../map/")
+target_compile_options(lib-mapf-r PUBLIC -O3 -Wall -mtune=native -march=native)
+target_compile_features(lib-mapf-r PUBLIC cxx_std_20)
+target_include_directories(lib-mapf-r INTERFACE ./include)
+
+add_subdirectory(../graph_r ./graph_r)
+target_link_libraries(lib-mapf-r lib-graph-r)
