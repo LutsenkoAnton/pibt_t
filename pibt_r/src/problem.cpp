@@ -1,7 +1,43 @@
 #include "../include/problem.hpp"
 
 #include <algorithm>
+#include <fstream>
 #include <iostream>
+
+Problem::Problem(const std::string& name, int limit_agents): gn(20072007), name(name) {
+#ifdef _SCENDIR_
+    std::ifstream file(_SCENDIR_ + name); 
+    // std::cerr << _SCENDIR_ << std::endl;
+#else 
+    std::ifstream file(name);
+
+    // std::cerr << name << std::endl;
+#endif
+    std::string line;
+    getline(file, line); // Skipping version line
+    int bucket;
+    std::string map_file;
+    int map_width;
+    int map_height;
+    file >> bucket >> map_file >> map_width >> map_height;
+    g = Graph(map_file);
+    int x, y;
+    file >> x >> y;
+    starting_nodes.emplace_back(g.getNode(g.getID(x, y)), Direction::X_PLUS);
+    file >> x >> y;
+    target_nodes.emplace_back(g.getNode(g.getID(x, y)));
+    double optimal_dist;
+    file >> optimal_dist;
+    limit_agents--;
+    while ((file >> bucket) && limit_agents--) {
+        file >> map_file >> map_width >> map_height;
+        file >> x >> y;
+        starting_nodes.emplace_back(g.getNode(g.getID(x, y)), Direction::X_PLUS);
+        file >> x >> y;
+        target_nodes.emplace_back(g.getNode(g.getID(x, y)));
+        file >> optimal_dist;
+    }
+}
 
 void Problem::setRandomStartsAndTargets() {
     // initialize
@@ -101,5 +137,18 @@ void Problem::setWellFromedInstance() {
                 break;
             }
         }
+    }
+}
+
+void Problem::write_instance(const std::string& filename) {
+    std::ofstream fout(filename);
+    fout << "map_file=" << g.getName() << std::endl;
+    fout << "agents=" << starting_nodes.size() << std::endl;
+    fout << "seed=20072007" << std::endl;
+    fout << "random_problem=0" << std::endl;
+    fout << "max_timestep=1000" << std::endl;
+    fout << "max_comp_time=5000" << std::endl;
+    for (size_t i = 0; i < starting_nodes.size(); ++i) {
+        fout << starting_nodes[i].n.x << ',' << starting_nodes[i].n.y << ',' << target_nodes[i].x << ',' << target_nodes[i].y << '\n';
     }
 }

@@ -110,7 +110,7 @@ std::vector<std::pair<int, DirectedNode>> Graph::getInNeighbours(const DirectedN
 
 Graph::Graph(): gn(20072007) {}
 
-Graph::Graph(const std::string& filename): gn(20072007) {
+Graph::Graph(const std::string& filename): name(filename), gn(20072007) {
 #ifdef _MAPDIR_
     std::ifstream file(_MAPDIR_ + filename);
 #else

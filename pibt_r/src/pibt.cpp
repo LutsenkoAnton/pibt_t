@@ -18,8 +18,6 @@ PIBT::PIBT(const Problem& p): Solver(p),
         agents[i].init_d = p.getG().getDist(agents[i].now, agents[i].target); // Strange thing
         agents[i].tie_breaker = distr((this -> p).gn);
         occupied_now[agents[i].now.n.id] = i;
-        // if (i == 55)
-        // std::cerr << agents[i].now << ' ' << agents[i].target.id << ' ' << agents[i].init_d << std::endl;
     }
 }
 
@@ -38,20 +36,12 @@ Paths PIBT::solve() {
     std::iota(agent_inds.begin(), agent_inds.end(), 0);
     int cnt = 0;
     while (true) {
-        std::cerr << cnt << std::endl;
-        if (++cnt >= 100) break;
         std::sort(agent_inds.begin(), agent_inds.end(), compare);
         for (const auto& a : agent_inds) {
             if (agents[a].next == DirectedNode()) {
                 prioriy_inheritance(a);
             }
-            // if (cnt < 10) {
-            //     std::cout << std::boolalpha << (agents[a].next != DirectedNode()) << agents[a].next << ' ' << agents[a].now << ' ' << agents[a].target.x << ' ' << agents[a].target.y << std::endl;
-            // }
         }
-        // if (cnt < 10) {
-        // std::cout << std::endl;
-        // }
         bool to_finish = true;
         for (const auto& a: agent_inds) {
             occupied_now[agents[a].now.n.id] = -1;
@@ -73,30 +63,19 @@ Paths PIBT::solve() {
                 found = true;
             }
         }
+        if (cnt++ >= 300) break;
         if (found) break;
         if (to_finish) {
             break;
         }
     }
-    // for (int i = 0; i < occupied_next.size(); ++i) {
-    //     std::cerr << occupied_next[i] << ' ';
-    //     if (i % 6 == 5) {
-    //         std::cerr << std::endl;
-    //     }
-    // }
     return solution;
 }
 
 bool PIBT::prioriy_inheritance(int ai, int aj) {
-    // std::cerr << "prioriy_inheritance " << ai << std::endl;
     auto compare = [&](const std::pair<int, DirectedNode>& v, const std::pair<int, DirectedNode>& u) {
         int d_v = p.getG().getDist(v.second, agents[ai].target) + v.first;
         int d_u = p.getG().getDist(u.second, agents[ai].target) + u.first;
-        // if (ai == 55) {
-        //     std::cerr << agents[ai].target.id << std::endl;
-        //     std::cerr << v.second << ' ' << d_v << std::endl;
-        //     std::cerr << u.second << ' ' << d_u << std::endl;
-        // }
         if (d_v != d_u) return d_v < d_u;
         if (occupied_now[v.second.n.id] != -1 && occupied_now[u.second.n.id] == -1)
             return false;
@@ -109,7 +88,6 @@ bool PIBT::prioriy_inheritance(int ai, int aj) {
     neighbours.emplace_back(2, agents[ai].now);
     std::sort(neighbours.begin(), neighbours.end(), compare);
     for (const auto& [w, d]: neighbours) {
-        // std::cerr << ai << ' ' << w << ' ' << d << ' ' << agents[ai].now << ' ' << agents[ai].target.x << ' ' << agents[ai].target.y << std::endl;
         if (w > 1 && agents[ai].now.d != d.d) {
             occupied_next[agents[ai].now.n.id] = ai;
             agents[ai].next = agents[ai].now;
@@ -123,7 +101,6 @@ bool PIBT::prioriy_inheritance(int ai, int aj) {
         agents[ai].next = d;
 
         int ak = occupied_now[d.n.id];
-        // std::cerr << ak << std::endl;
         if (ak != -1 && agents[ak].next == DirectedNode()) {
             if (!prioriy_inheritance(ak, ai)) continue;
         } else if (ak != -1 && ak != ai && agents[ak].next.n == d.n) {

@@ -9,7 +9,7 @@
 class Problem {
 public:
     Problem() {};
-    Problem(const std::string& name): name(name) {}
+    Problem(const std::string& name, int limit_agents);
     Problem(const std::string& name, const Graph& g, const std::vector<DirectedNode>& starting_nodes, const std::vector<Node>& target_nodes): gn(20072007), name(name), g(g), starting_nodes(starting_nodes), target_nodes(target_nodes) {}
 
     void setRandomStartsAndTargets();
@@ -23,6 +23,7 @@ public:
     std::vector<Node> getTargets() const { return target_nodes; }
     Graph getG() const { return g; }
     std::mt19937 gn;
+    void write_instance(const std::string& filename);
 
 private:
     std::string name;

@@ -18,6 +18,19 @@ std::vector<Direction> rotate(Direction from, Direction to) {
     return {};
 }
 
+Direction get_direction(const Node& from, const Node& to) {
+    if (from.x == to.x) {
+        if (to.y == from.y + 1) {
+            return Direction::Y_PLUS;
+        }
+        return Direction::Y_MINUS;
+    }
+    if (to.x == from.x + 1) {
+        return Direction::X_PLUS;
+    }
+    return Direction::X_MINUS;
+}
+
 std::ostream& operator<<(std::ostream& out, const Direction& d) {
     switch (d) {
         case X_PLUS:

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <iostream>
+
 struct Node {
     int id;
     int x;
@@ -10,7 +12,12 @@ struct Node {
 
     int dist(const Node& other) const;
 
-    bool operator==(const Node& other) const = default;
-    bool operator!=(const Node& other) const = default;
+    bool operator==(const Node& other) const {
+        return x == other.x && y == other.y;
+    }
+    bool operator!=(const Node& other) const {
+        return x != other.x || y != other.y;
+    }
 };
 
+std::ostream& operator<<(std::ostream& out, const Node& n);

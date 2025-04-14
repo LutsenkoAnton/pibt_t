@@ -1,5 +1,7 @@
 #pragma once
 
+#include "node.hpp"
+
 #include <iostream>
 #include <vector>
 
@@ -12,6 +14,7 @@ enum Direction {
 
 int operator-(const Direction& d1, const Direction& d2);
 std::vector<Direction> rotate(Direction from, Direction to);
+Direction get_direction(const Node& from, const Node& to);
 
 std::ostream& operator<<(std::ostream& out, const Direction& d);
 

@@ -5,16 +5,28 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_subdirectory(./pibt_r)
 # add_subdirectory(./third_party/googletest)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,undefined -g")
 add_executable(pibt mapf.cpp)
 target_compile_features(pibt PUBLIC cxx_std_20)
 target_link_libraries(pibt lib-mapf-r)
+
+add_executable(rotate_result rotate_result.cpp)
+target_compile_features(rotate_result PUBLIC cxx_std_20)
+target_link_libraries(rotate_result lib-mapf-r)
+
+add_executable(benchmark benchmark.cpp)
+target_compile_features(benchmark PUBLIC cxx_std_20)
+target_link_libraries(benchmark lib-mapf-r)
 
 # format
 add_custom_target(clang-format
   COMMAND clang-format -i
   ../pibt_r/include/*.hpp
   ../pibt_r/src/*.cpp
+  ../graph_r/include/*.hpp
+  ../graph_r/src/*.cpp
   # ../tests/*.cpp
+  ../rotate_result.cpp
   ../mapf.cpp)
   # ../mapd.cpp)
 

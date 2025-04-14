@@ -12,6 +12,9 @@ public:
     Graph();
     Graph(const std::string& filename);
     Path getPath(const DirectedNode& start, const Node& target, const std::vector<Node>& prohibited);
+    std::string getName() const {
+        return name;
+    }
     int getDist(const DirectedNode& start, const Node& target) {
         return getPath(start, target, {}).size();
     }
@@ -31,6 +34,7 @@ public:
 
     void halt(const std::string& msg);
 private:
+    std::string name;
     int height;
     int width;
     std::vector<std::vector<bool>> exist;

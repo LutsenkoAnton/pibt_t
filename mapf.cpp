@@ -1,14 +1,37 @@
-#include <pibt.hpp>
+#include <winpibt.hpp>
+#include "pibt.hpp"
+#include <rotate_result.hpp>
 
 int main(int argc, char* argv[]) {
-    if (argc != 2) {
+    if (argc != 4) {
         std::cerr << "Wrong number of arguments" << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
-    Graph g(argv[1]);
-    Problem p(argv[1], g, std::vector<DirectedNode>(100), std::vector<Node>(100));
-    p.setRandomStartsAndTargets();
-    PIBT solver(p);
-    print_solution(solver.solve());
+    const int agents_num = std::stoi(argv[3]);
+    // Graph g(argv[1]);
+    // Problem p(argv[1], g, std::vector<DirectedNode>(agents_num), std::vector<Node>(agents_num));
+    Problem p(argv[1], agents_num);
+    // p.setRandomStartsAndTargets();
+    // p.write_instance("instance.txt");
+    Paths solution;
+    if (std::string(argv[2]) == "pibt") {
+        PIBT solver(p);
+        solution = solver.solve();
+    } else if (std::string(argv[2]) == "rotated-pibt") {
+        RotateResult solver(p, "./mapf");
+        solution = solver.solve();
+    } else {
+        WinPIBT solver(p, 20);
+        solution = solver.solve();
+    }
+    if (check_solution(solution, p)) {
+        std::cerr << "SOLVED" << std::endl;
+    }
+    print_solution(solution, p);
+    solution = normalize_solution(solution);
+    std::cerr << makespan(solution) << ' ' << sum_of_costs(solution) << std::endl;
+    // } else {
+    //     std::cout << "No solution" << std::endl;
+    // }
     return 0;
 }
