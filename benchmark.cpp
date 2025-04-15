@@ -3,6 +3,7 @@
 #include <solver.hpp>
 #include <problem.hpp>
 #include <rotate_result.hpp>
+#include <algorithm>
 #include <filesystem>
 #include <vector>
 
@@ -52,6 +53,9 @@ Metadata run_solver(const std::string& solver_str, int limit_agents, const std::
             auto end = std::chrono::steady_clock::now();
             std::chrono::duration<double> diff = end - start;
             time_taken.push_back(diff.count());
+        } else if (solver_str == "dummy") {
+            solution = {};
+            time_taken.push_back(0);
         }
 
         if (check_solution(solution, p)) {
@@ -87,9 +91,11 @@ int main(int argc, char* argv[]) {
     std::cout << "agent_num";
     // std::vector<std::string> names = {"winpibt10", "pibt", "rotate_result"};
     std::vector<std::string> names = {"winpibt10", "winpibt20", "pibt",  "rotate_result"};
-    if (agent_num > 20) {
-        names = {"winpibt10", "winpibt20",  "rotate_result"};
-    }
+    // if (agent_num > 20) {
+    //     // names = {"winpibt10", "winpibt20",  "rotate_result"};
+    //     // names = { "winpibt20",  "rotate_result"};
+    //     // names = { "winpibt20"};
+    // }
     for (const auto& name : names) {
         std::cout << ",solved_" << name;
         std::cout << ",makespan_" << name;
@@ -97,12 +103,16 @@ int main(int argc, char* argv[]) {
         std::cout << ",time_taken_" << name;
     }
     std::cout << std::endl;
+    std::vector<std::string> banned_names;
     for (int limit_agents = 1; limit_agents <= agent_num; ++limit_agents) {
         std::cerr << "Current agent count: " << limit_agents << std::endl;
         std::cout << limit_agents;
         std::vector<Metadata> metadatas;
         std::vector<bool> solved_instances;
         for (const auto& name : names) {
+            if (std::find(banned_names.begin(), banned_names.end(), name) != banned_names.end()) {
+                metadatas.emplace_back(run_solver("dummy", limit_agents, scen_dir));
+            }
             metadatas.emplace_back(run_solver(name, limit_agents, scen_dir));
             if (solved_instances.empty()) {
                 solved_instances.assign(get<0>(metadatas.back()).size(), true); 
@@ -131,6 +141,10 @@ int main(int argc, char* argv[]) {
             for (size_t mkspan: makespan_vec) {
                 solved_count += (mkspan != 0);
             }
+            if (solved_count == 0) {
+                std::cout << ",nan,nan,nan,nan";
+                continue;
+            }
             std::cout << ',' << 100.0 * solved_count / solved_instances.size();
             size_t makespan_sum = 0;
             size_t sum_of_costs_sum = 0;
@@ -141,9 +155,11 @@ int main(int argc, char* argv[]) {
                 sum_of_costs_sum += sum_of_costs_vec[i];
                 time_taken_sum += time_taken_vec[i];
             }
-            std::cout << ',' << static_cast<double>(makespan_sum) / all_solved;
-            std::cout << ',' << static_cast<double>(sum_of_costs_sum) / all_solved;
-            std::cout << ',' << time_taken_sum / all_solved;
+            if (time_taken_sum != 0) {
+                std::cout << ',' << static_cast<double>(makespan_sum) / all_solved;
+                std::cout << ',' << static_cast<double>(sum_of_costs_sum) / all_solved;
+                std::cout << ',' << time_taken_sum / all_solved;
+            }
         }
 
         std::cout << '\n';

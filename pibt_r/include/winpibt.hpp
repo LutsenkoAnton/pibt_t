@@ -31,6 +31,9 @@ private:
 
     bool winPIBT(int ai, int t_to, bool please_move);
     int getPosessingAgent(Node d, int time);
-    Path getPath(int ai, int t_from, int t_max, Node banned, int owner_ai);
+    bool isVertexConflict(Node n, int time, int ai);
+    bool canStay(int ai);
+    void stay(int ai, int t_to);
+    Path getPath(int ai, int t_from, int t_max, Node banned, int owner_ai, std::vector<std::pair<Node, int>> banned_nodes);
     bool checkValidPath(int ai, const Path& path, int t_from , int t_max, int owner_ai);
 };

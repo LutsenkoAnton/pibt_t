@@ -26,6 +26,8 @@ int main(int argc, char* argv[]) {
     }
     if (check_solution(solution, p)) {
         std::cerr << "SOLVED" << std::endl;
+    } else {
+        std::cerr << "WRONG SOLUTION" << std::endl;
     }
     print_solution(solution, p);
     solution = normalize_solution(solution);

@@ -42,7 +42,7 @@ bool check_solution(const Paths& paths, const Problem& p) {
                 }
             }
             if (!found){
-                std::cerr << "Incorrect move: agent=" << ai << "; time=" << i - 1 << std::endl;
+                std::cerr << "Incorrect move: agent=" << ai << "; time=" << i - 1 << "; from=" << path[i - 1] << "; to=" << path[i] << std::endl;
                 return false;
             }
         }
@@ -51,24 +51,24 @@ bool check_solution(const Paths& paths, const Problem& p) {
         for (size_t aj = ai + 1; aj < p.getNum(); ++aj) {
             for (size_t t = 0; t < std::max(paths[ai].size(), paths[aj].size()); ++t) {
                 DirectedNode current_node_i;
-                if (paths[ai].size() >= t) {
+                if (paths[ai].size() <= t) {
                     current_node_i = paths[ai].back();
                 } else {
                     current_node_i = paths[ai][t];
                 }
                 DirectedNode current_node_j;
-                if (paths[aj].size() >= t) {
+                if (paths[aj].size() <= t) {
                     current_node_j = paths[aj].back();
                 } else {
                     current_node_j = paths[aj][t];
                 }
                 if (current_node_i.n == current_node_j.n) {
-                    std::cerr << "Agent vertex collision: node=" << current_node_i.n << "; agent_i=" << ai << "; agent_j=" << aj << std::endl;
+                    std::cerr << "Agent vertex collision: node=" << current_node_i.n << "; agent_i=" << ai << "; agent_j=" << aj << "; time=" << t<< std::endl;
                     return false;
                 }
                 if (t + 1 >= paths[ai].size() || t + 1 >= paths[aj].size()) continue;
                 if (paths[ai][t].n == paths[aj][t + 1].n && paths[ai][t + 1].n == paths[aj][t].n) {
-                    std::cerr << "Agent edge collision: edge=" << paths[ai][t].n << "," << paths[ai][t + 1].n << "; agent_i=" << ai << "; agent_j=" << aj << std::endl;
+                    std::cerr << "Agent edge collision: edge=" << paths[ai][t].n << "," << paths[ai][t + 1].n << "; agent_i=" << ai << "; agent_j=" << aj << "; time=" << t << std::endl;
                     return false;
                 }
             }
