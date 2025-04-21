@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <map>
 #include <queue>
+#include <utility>
 
 #include <graph.hpp>
 
@@ -21,7 +22,7 @@ WinPIBT::WinPIBT(const Problem& p, const int WINDOW_LIMIT)
     }
 }
 
-bool WinPIBT::checkValidPath(int ai, const Path& path, int t_from, int t_max, int owner_ai = -1) {
+bool WinPIBT::checkValidPath(int ai, const Path& path, int t_from, int t_max) {
     for (int j = 1; j < path.size(); ++j) {
         DirectedNode v1 = path[j - 1];
         DirectedNode v2 = path[j];
@@ -41,7 +42,7 @@ bool WinPIBT::checkValidPath(int ai, const Path& path, int t_from, int t_max, in
     return true;
 }
 
-Path WinPIBT::getPath(int ai, int t_from, int t_max, Node banned = Node(),int owner_ai = -1, std::vector<std::pair<Node, int>> banned_nodes = {}) {
+Path WinPIBT::getPath(int ai, int t_from, int t_max, bool please_move = false, Node banned = Node()) {
     if (t_from >= t_max || agents[ai].l >= t_max) {
         std::cerr << "Incorrect call of getPath with arguments: ai=" << ai << "; t_from=" << t_from
                   << "; t_max=" << t_max << std::endl;
@@ -64,7 +65,11 @@ Path WinPIBT::getPath(int ai, int t_from, int t_max, Node banned = Node(),int ow
     std::priority_queue<AstarNode, std::vector<AstarNode>, decltype(compare)> OPEN(compare);
     std::map<int, int> dist;
     // initial node
-    OPEN.push(AstarNode{start, t_from, start.dist(agents[ai].target)});
+    Node target = agents[ai].target;
+    if (please_move) {
+        target = p.getG().getRandomNode();
+    }
+    OPEN.push(AstarNode{start, t_from, start.dist(target)});
     bool invalid = true;
     AstarNode last;
     Path path;
@@ -73,9 +78,6 @@ Path WinPIBT::getPath(int ai, int t_from, int t_max, Node banned = Node(),int ow
         auto current_node = OPEN.top();
         OPEN.pop();
         if (current_node.d == banned) continue;
-        if (std::find(banned_nodes.begin(), banned_nodes.end(), std::make_pair(current_node.d.n, current_node.time)) != banned_nodes.end()) {
-            continue;
-        }
         if (dist.contains(p.getG().getID(current_node.d)))
             continue;
         dist[p.getG().getID(current_node.d)] = current_node.time;
@@ -84,13 +86,13 @@ Path WinPIBT::getPath(int ai, int t_from, int t_max, Node banned = Node(),int ow
             last = current_node;
             break;
         }
-        auto tmpPath = p.getG().getPath(current_node.d, agents[ai].target, {banned});
+        auto tmpPath = p.getG().getPath(current_node.d, target, {banned});
         if (!tmpPath.empty()) {
             while (current_node.time + tmpPath.size() - 1 < t_max)
                 tmpPath.push_back(tmpPath.back());
             while (current_node.time + tmpPath.size() - 1 > t_max)
                 tmpPath.pop_back();
-            if (checkValidPath(ai, tmpPath, current_node.time, t_max, owner_ai)) {
+            if (checkValidPath(ai, tmpPath, current_node.time, t_max)) {
                 path = tmpPath;
                 std::reverse(path.begin(), path.end());
                 path.pop_back();
@@ -101,14 +103,17 @@ Path WinPIBT::getPath(int ai, int t_from, int t_max, Node banned = Node(),int ow
         }
         auto neighbours = p.getG().getNeighbours(current_node.d);
         std::shuffle(neighbours.begin(), neighbours.end(), p.gn);
+        if (!please_move) {
+            neighbours.emplace_back(0, current_node.d);
+        }
         for (auto [w, u] : neighbours) {
             int g_cost = current_node.time + w;
             if (dist.contains(p.getG().getID(u)))
                 continue;
             Path tmpPath = {current_node.d, u};
-            if (!checkValidPath(ai, tmpPath, current_node.time, t_max, owner_ai))
+            if (!checkValidPath(ai, tmpPath, current_node.time, t_max))
                 continue;
-            OPEN.emplace(u, g_cost, g_cost + u.dist(agents[ai].target));
+            OPEN.emplace(u, g_cost, g_cost + u.dist(target));
         }
     }
     if (invalid)
@@ -141,7 +146,8 @@ int WinPIBT::getPosessingAgent(Node n, int time) {
 
 bool WinPIBT::isVertexConflict(Node n, int time, int ai) {
     for (int i = 0; i < agents.size(); ++i) {
-        if (i == ai) continue;
+        if (i == ai)
+            continue;
         if (planned_paths[i].size() <= time && planned_paths[i].back() == n)
             return true;
         if (planned_paths[i].size() > time && planned_paths[i][time] == n) {
@@ -149,7 +155,6 @@ bool WinPIBT::isVertexConflict(Node n, int time, int ai) {
         }
     }
     return false;
-
 }
 
 int WinPIBT::getTmax() {
@@ -162,7 +167,8 @@ int WinPIBT::getTmax() {
 
 bool WinPIBT::canStay(int ai) {
     for (int i = 0; i < agents.size(); ++i) {
-        if (i == ai) continue;
+        if (i == ai)
+            continue;
         for (int j = agents[ai].l; j <= agents[i].l; ++j) {
             if (planned_paths[i][j].n == planned_paths[ai][agents[ai].l].n) {
                 return false;
@@ -173,8 +179,23 @@ bool WinPIBT::canStay(int ai) {
 }
 
 void WinPIBT::stay(int ai, int t_to) {
-    while (!canStay(ai)) {
+    int previous_l = agents[ai].l;
+    while (agents[ai].l > 0 && !canStay(ai)) {
         --agents[ai].l;
+    }
+    if (!canStay(ai)) {
+        agents[ai].l = previous_l;
+        for (int i = 0; i < agents.size(); ++i) {
+            agents[i].l = std::min(agents[ai].l, agents[i].l);
+            planned_paths[i].resize(std::min(agents[ai].l + 1, static_cast<int>(planned_paths[i].size())));
+        }
+        int mx_elapsed = 0;
+        for (int i = 0; i < agents.size(); ++i) {
+            mx_elapsed = std::max(mx_elapsed, agents[i].elapsed);
+        }
+        agents[ai].elapsed = mx_elapsed + 1;
+        stop_till_new_iteration = true;
+        return;
     }
     planned_paths[ai].resize(agents[ai].l + 1);
     for (int t = agents[ai].l + 1; t <= t_to; ++t) {
@@ -186,31 +207,20 @@ void WinPIBT::stay(int ai, int t_to) {
 bool WinPIBT::winPIBT(int ai, int t_to, bool please_move = false) {
     if (agents[ai].l >= t_to)
         return true;
-    auto compare = [&](int a, int b) {
-        if (agents[a].elapsed != agents[b].elapsed)
-            return agents[a].elapsed > agents[b].elapsed;
-        // use initial distance
-        if (agents[a].init_d != agents[b].init_d)
-            return agents[a].init_d > agents[b].init_d;
-        return agents[a].tie_breaker > agents[b].tie_breaker;
-    };
+    // auto compare = [&](int a, int b) {
+    //     if (agents[a].elapsed != agents[b].elapsed)
+    //         return agents[a].elapsed > agents[b].elapsed;
+    //     // use initial distance
+    //     if (agents[a].init_d != agents[b].init_d)
+    //         return agents[a].init_d > agents[b].init_d;
+    //     return agents[a].tie_breaker > agents[b].tie_breaker;
+    // };
     int t_max = std::max(t_to, getTmax());
     int t = agents[ai].l + 1;
     bool planned = false;
-    int owner_ai = -1;
-    for (int i = 0; i < agents.size(); ++i) {
-        if (i == ai) continue;
-        if (owner_ai != -1) break;
-        for (int j = agents[ai].l; j <= std::min(static_cast<int>(planned_paths[i].size()) - 1, t_to); ++j) {
-            if (planned_paths[i][j].n == planned_paths[ai][agents[ai].l].n) {
-                owner_ai = i;
-                break;
-            }
-        }
-    }
     if (!please_move && planned_paths[ai][agents[ai].l] == agents[ai].target) {
         Path newPath(t_max - agents[ai].l + 1, planned_paths[ai].back());
-        if (checkValidPath(ai, newPath, agents[ai].l, t_max, owner_ai)) {
+        if (checkValidPath(ai, newPath, agents[ai].l, t_max)) {
             planned_paths[ai].resize(agents[ai].l + 1);
             for (int j = agents[ai].l + 1; j <= t_to; ++j) {
                 planned_paths[ai].push_back(planned_paths[ai].back());
@@ -219,7 +229,7 @@ bool WinPIBT::winPIBT(int ai, int t_to, bool please_move = false) {
         }
     }
     if (!planned) {
-        Path wanted_path = getPath(ai, agents[ai].l, t_max, Node(), owner_ai);
+        Path wanted_path = getPath(ai, agents[ai].l, t_max, please_move && planned_paths[ai][agents[ai].l] == agents[ai].target);
         if (wanted_path.empty()) {
             stay(ai, t_to);
             return false;
@@ -229,7 +239,7 @@ bool WinPIBT::winPIBT(int ai, int t_to, bool please_move = false) {
             planned_paths[ai].push_back(wanted_path[j - agents[ai].l]);
             if (!please_move && wanted_path[j - agents[ai].l] == agents[ai].target) {
                 Path newPath(t_max - j + 1, wanted_path[j - agents[ai].l]);
-                if (checkValidPath(ai, newPath, j, t_max, owner_ai)) {
+                if (checkValidPath(ai, newPath, j, t_max)) {
                     ++j;
                     for (; j <= t_to; ++j) {
                         planned_paths[ai].push_back(planned_paths[ai].back());
@@ -242,13 +252,22 @@ bool WinPIBT::winPIBT(int ai, int t_to, bool please_move = false) {
         DirectedNode v = planned_paths[ai][t];
         int aj = getPosessingAgent(v.n, t - 1);
         while (aj != -1 && aj != ai) {
-            if (compare(aj, ai)) break;
+            // if (compare(aj, ai))
+            //     break;
             winPIBT(aj, t_max, true);
+            if (stop_till_new_iteration) {
+                return false;
+            }
             aj = getPosessingAgent(v.n, t - 1);
         }
         aj = getPosessingAgent(v.n, t);
         if ((aj != -1 && aj != ai) || isVertexConflict(v.n, t, ai)) {
-            if ((aj != -1 && compare(ai, aj) && !winPIBT(aj, t_max, true)) || getPosessingAgent(v.n, t) != -1 || isVertexConflict(v.n, t, ai)) {
+            std::vector<int> good_nodes {-1, ai};
+            if ((aj != -1 && !winPIBT(aj, t_max, true)) || std::find(good_nodes.begin(), good_nodes.end(), getPosessingAgent(v.n, t)) == good_nodes.end()  ||
+                isVertexConflict(v.n, t, ai)) {
+                if (stop_till_new_iteration) {
+                    return false;
+                }
                 bool staying = true;
                 for (int j = std::max(0, t - 6); j < t; ++j) {
                     if (planned_paths[ai][j].n != planned_paths[ai][t - 1].n) {
@@ -263,7 +282,7 @@ bool WinPIBT::winPIBT(int ai, int t_to, bool please_move = false) {
                 Node banned;
                 if (staying) {
                     banned = v.n;
-                    Path newPath = getPath(ai, t - 1, t_max, banned, owner_ai);
+                    Path newPath = getPath(ai, t - 1, t_max, false, banned);
                     if (newPath.empty()) {
                         stay(ai, t_to);
                         return false;
@@ -306,6 +325,7 @@ Paths WinPIBT::solve() {
     int t = 0;
     std::vector<int> l_snapshot(agents.size());
     while (!checkSolved()) {
+        stop_till_new_iteration = false;
         for (int i = 0; i < agents.size(); ++i) {
             for (int j = l_snapshot[i] + 1; j <= agents[i].l; ++j) {
                 if (planned_paths[i][j] == agents[i].target) {
@@ -324,8 +344,10 @@ Paths WinPIBT::solve() {
             if (agents[ai].l <= t) {
                 if (j == 0) {
                     winPIBT(ai, t + WINDOW_LIMIT);
+                    if (stop_till_new_iteration) break;
                 } else {
                     winPIBT(ai, std::min(t + WINDOW_LIMIT, t_sup));
+                    if (stop_till_new_iteration) break;
                 }
             }
             if (j == 0) {

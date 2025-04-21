@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.16)
+file(GLOB SRCS "./src/*.cpp")
+project(lib-mapf-t)
+add_library(lib-mapf-t STATIC ${SRCS})
+add_definitions(-D_MAPDIR_="${CMAKE_CURRENT_LIST_DIR}/../map/")
+# add_definitions(-D_SCENDIR_="${CMAKE_CURRENT_LIST_DIR}/../scen/")
+target_compile_options(lib-mapf-t PUBLIC -O3 -Wall -mtune=native -march=native)
+target_compile_features(lib-mapf-t PUBLIC cxx_std_20)
+target_include_directories(lib-mapf-t INTERFACE ./include)
+
+add_subdirectory(../graph_t ./graph_t)
+target_link_libraries(lib-mapf-t lib-graph-t)

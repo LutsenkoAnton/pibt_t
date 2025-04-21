@@ -26,6 +26,8 @@ private:
 
     Paths planned_paths;
 
+    bool stop_till_new_iteration = false;
+
     int getTmax();
     bool checkSolved();
 
@@ -34,6 +36,6 @@ private:
     bool isVertexConflict(Node n, int time, int ai);
     bool canStay(int ai);
     void stay(int ai, int t_to);
-    Path getPath(int ai, int t_from, int t_max, Node banned, int owner_ai, std::vector<std::pair<Node, int>> banned_nodes);
-    bool checkValidPath(int ai, const Path& path, int t_from , int t_max, int owner_ai);
+    Path getPath(int ai, int t_from, int t_max, bool please_move, Node banned);
+    bool checkValidPath(int ai, const Path& path, int t_from , int t_max);
 };

@@ -175,6 +175,14 @@ Node Graph::getNode(int id) const {
     return Node(id, id % width, id / width);
 }
 
+Node Graph::getRandomNode() {
+    std::uniform_int_distribution x_distr(0, width - 1);
+    std::uniform_int_distribution y_distr(0, height - 1);
+    int x = x_distr(gn);
+    int y = y_distr(gn);
+    return Node(getID(x, y), x, y);
+}
+
 DirectedNode Graph::getDirectedNode(int id) const {
     return DirectedNode(getNode(id / 4), static_cast<Direction>(id % 4));
 }

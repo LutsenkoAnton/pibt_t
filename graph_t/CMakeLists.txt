@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 file(GLOB SRCS "./src/*.cpp")
-SET(LIBRARY_NAME lib-graph-r)
+SET(LIBRARY_NAME lib-graph-t)
 project(${LIBRARY_NAME})
 add_library(${LIBRARY_NAME} STATIC ${SRCS})
 target_compile_options(${LIBRARY_NAME} PUBLIC -O3 -Wall -mtune=native -march=native)

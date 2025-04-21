@@ -27,6 +27,7 @@ public:
     int getID(int x, int y, const Direction& d) const;
     int getID(const DirectedNode& d) const;
     Node getNode(int id) const;
+    Node getRandomNode();
     DirectedNode getDirectedNode(int id) const;
     std::vector<std::pair<int, DirectedNode>> getNeighbours(const DirectedNode& n) const;
     std::vector<std::pair<int, DirectedNode>> getUndirectedNeighbours(const DirectedNode& n) const;
